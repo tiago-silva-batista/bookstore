@@ -1,7 +1,11 @@
+
+
+
 from rest_framework import serializers
-from product.models.product import Product
-from product.models.category import Category
+
+from product.models.product import Category, Product
 from product.serializers.category_serializer import CategorySerializer
+
 
 class ProductSerializer(serializers.ModelSerializer):
     # ↓ adiciona min_length pra passar no test_title_min_length
@@ -15,7 +19,7 @@ class ProductSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ['title', 'description', 'price', 'active', 'category', 'category_ids']
+        fields = ['id', 'title', 'description', 'price', 'active', 'category', 'category_ids']
 
     # ↓ validação pra passar no test_title_unique_case_insensitive
     def validate_title(self, value):
@@ -27,17 +31,10 @@ class ProductSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
-        cat_ids = validated_data.pop('category_ids', [])
-        obj = Product.objects.create(**validated_data)
-        if cat_ids:
-            obj.category.set(cat_ids)
-        return obj
+        category_data = validated_data.pop('category_ids')
 
-    def update(self, instance, validated_data):
-        cat_ids = validated_data.pop('category_ids', None)
-        for k, v in validated_data.items():
-            setattr(instance, k, v)
-        instance.save()
-        if cat_ids is not None:
-            instance.category.set(cat_ids)
-        return instance
+        product = Product.objects.create(**validated_data)
+        for category in category_data:
+            product.category.add(category)
+
+        return product
