@@ -1,39 +1,26 @@
 services:
   db:
-    image: postgres:16-alpine
+    image: postgres:16.0-alpine
+    ports:
+      - 5432:5432
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgres/data/
     environment:
-      POSTGRES_USER: dev
-      POSTGRES_PASSWORD: dev
-      POSTGRES_DB: bookstore_db
-    networks:
-      - backend
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-
+      - POSTGRES_USER=dev
+      - POSTGRES_PASSWORD=dev
+      - POSTGRES_DB=bookstore_db
   web:
     build: .
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
-      - .:/app
-      - /app/.venv
+      - app_data:/usr/src/app/
     ports:
-      - "8000:8000"
+      - 8000:8000
     env_file:
       - ./env.dev
     depends_on:
-      db:
-        condition: service_healthy
-    networks:
-      - backend
-
-networks:
-  backend:
-    driver: bridge
+      - db
 
 volumes:
   postgres_data:
+  app_data:
