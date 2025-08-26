@@ -1,39 +1,38 @@
 name: Python application
 
-on: [push]
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build:
+    runs-on: ubuntu-latest
+
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.8, 3.9]
-        poetry-version: [1.1.4]
-
-    runs-on: ubuntu-latest
+        python-version: ["3.13"]
+        poetry-version: ["1.8.3"]
 
     steps:
-    - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Set up Python ${{ matrix.python-versionma }}
-    uses: actions/setup-python@v2
-    with:
-      python-version: ${{ matrix.python-version }}
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
 
-    - name: Install poetry ${{ matrix.poetry-version }}
-      run: |
-      python -m ensurepip
-      python -m pip install --upgarde pip
-      python -m pip install poetry==${{ matrix.poetry-version }}
-    - name: View poetry --help
-      run: poetry --help
+      - name: Install Poetry ${{ matrix.poetry-version }}
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "poetry==${{ matrix.poetry-version }}"
+          poetry --version
 
-    - name: Install dependencies
-      shell: bash
-      run: python -m poetry install
+      - name: Install dependencies
+        run: poetry install --no-interaction --no-root
 
-    - name: Test
-      run: |
-        poetry run python manage.py test
-      
-
+      - name: Run tests
+        run: poetry run python manage.py test
