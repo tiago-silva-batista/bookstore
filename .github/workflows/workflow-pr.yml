@@ -31,8 +31,8 @@ jobs:
           poetry run python manage.py test
       - name: Wemake Python Styleguide
         uses: wemake-services/wemake-python-styleguide@.16.0
-        continua-on-error: true
+        continue-on-error: true
         with:
             reporter: 'github-pr-review'
         env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
