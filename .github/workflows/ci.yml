@@ -24,12 +24,12 @@ jobs:
           --health-timeout=5s
           --health-retries=24
 
-    # envs que o seu settings.py entende (cobri POSTGRES_* e SQL_*)
     env:
       DJANGO_SECRET_KEY: test-key
       DJANGO_DEBUG: "0"
       ALLOWED_HOSTS: "localhost,127.0.0.1"
 
+      # Vars que seu settings.py entende
       POSTGRES_DB: bookstore
       POSTGRES_USER: bookstore
       POSTGRES_PASSWORD: bookstore
@@ -51,7 +51,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.13'   # <<< alinha com seu projeto
 
       - uses: snok/install-poetry@v1
         with:
@@ -59,7 +59,6 @@ jobs:
           virtualenvs-create: true
           virtualenvs-in-project: true
 
-      # cliente psql (necessário para o "wait")
       - name: Install Postgres client
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
