@@ -18,25 +18,21 @@ jobs:
           POSTGRES_PASSWORD: bookstore
         ports:
           - 5432:5432
-        # healthcheck para o runner só começar os testes quando o DB estiver pronto
         options: >-
           --health-cmd="pg_isready -U bookstore -d bookstore"
-          --health-interval=10s
+          --health-interval=5s
           --health-timeout=5s
-          --health-retries=10
+          --health-retries=20
 
-    # variáveis que seu settings.py espera (cobri os dois formatos que você usa)
     env:
       DJANGO_SECRET_KEY: test-key
       DJANGO_DEBUG: "0"
       ALLOWED_HOSTS: "localhost,127.0.0.1"
-
       POSTGRES_DB: bookstore
       POSTGRES_USER: bookstore
       POSTGRES_PASSWORD: bookstore
       POSTGRES_HOST: 127.0.0.1
       POSTGRES_PORT: "5432"
-
       SQL_DATABASE: bookstore
       SQL_USER: bookstore
       SQL_PASSWORD: bookstore
@@ -44,23 +40,22 @@ jobs:
       SQL_PORT: "5432"
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
+      - uses: snok/install-poetry@v1
         with:
           version: 1.8.3
           virtualenvs-create: true
           virtualenvs-in-project: true
 
-      - name: Cache virtualenv
-        uses: actions/cache@v4
+      - name: Install Postgres client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - uses: actions/cache@v4
         with:
           path: .venv
           key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
@@ -70,7 +65,7 @@ jobs:
 
       - name: Wait for DB
         run: |
-          for i in {1..30}; do
+          for i in {1..60}; do
             pg_isready -h 127.0.0.1 -p 5432 -U bookstore -d bookstore && break
             sleep 2
           done
