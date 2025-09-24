@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: bookstore
+          POSTGRES_USER: bookstore
+          POSTGRES_PASSWORD: bookstore
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U bookstore -d bookstore"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=24
+
+    env:
+      DJANGO_SECRET_KEY: test-key
+      DJANGO_DEBUG: "0"
+      ALLOWED_HOSTS: "localhost,127.0.0.1"
+
+      # Vars que seu settings.py entende
+      POSTGRES_DB: bookstore
+      POSTGRES_USER: bookstore
+      POSTGRES_PASSWORD: bookstore
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+
+      SQL_ENGINE: django.db.backends.postgresql
+      SQL_DATABASE: bookstore
+      SQL_USER: bookstore
+      SQL_PASSWORD: bookstore
+      SQL_HOST: 127.0.0.1
+      SQL_PORT: "5432"
+
+      # para o psql no step de espera
+      PGPASSWORD: bookstore
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'   # <<< alinha com seu projeto
+
+      - uses: snok/install-poetry@v1
+        with:
+          version: 1.8.3
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Install Postgres client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - uses: actions/cache@v4
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+
+      - name: Install deps
+        run: poetry install --no-interaction --no-ansi
+
+      - name: Wait for DB (psql)
+        run: |
+          for i in {1..30}; do
+            psql -h 127.0.0.1 -U bookstore -d bookstore -c "SELECT 1;" && break
+            echo "DB not ready yet... ($i)"
+            sleep 2
+          done
+
+      - name: Migrate
+        run: poetry run python manage.py migrate --noinput
+
+      - name: Test
+        run: poetry run python manage.py test -v 2

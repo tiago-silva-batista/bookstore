@@ -1,26 +1,46 @@
 services:
   db:
-    image: postgres:16.0-alpine
-    ports:
-      - 5432:5432
-    volumes:
-      - postgres_data:/var/lib/postgres/data/
+    image: postgres:16
+    restart: unless-stopped
+    networks:
+      - app_net
     environment:
-      - POSTGRES_USER=dev
-      - POSTGRES_PASSWORD=dev
-      - POSTGRES_DB=bookstore_db
-  web:
-    build: .
-    command: python manage.py runserver 0.0.0.0:8000
-    volumes:
-      - app_data:/usr/src/app/
+      POSTGRES_DB: bookstore
+      POSTGRES_USER: bookstore
+      POSTGRES_PASSWORD: bookstore
     ports:
-      - 8000:8000
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U bookstore -d bookstore" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    networks:
+      - app_net
     env_file:
-      - ./env.dev
+      - .env
+    ports:
+      - "8000:8000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "
+        python manage.py migrate &&
+        python manage.py runserver 0.0.0.0:8000
+      "
+
+networks:
+  app_net:
+    name: bookstore_net
+    driver: bridge
 
 volumes:
-  postgres_data:
-  app_data:
+  pgdata:

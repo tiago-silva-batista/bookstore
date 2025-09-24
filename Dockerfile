@@ -14,19 +14,24 @@ ENV PYTHONUNBUFFERED=1 \
 
 # Instala o Poetry (sem toolchain pesada; usamos psycopg2-binary)
 RUN apt-get update && apt-get install -y --no-install-recommends curl \
- && curl -sSL https://install.python-poetry.org | python3 - \
- && poetry --version \
- && apt-get purge -y --auto-remove curl \
- && rm -rf /var/lib/apt/lists/*
+    && curl -sSL https://install.python-poetry.org | python3 - \
+    && poetry --version \
+    && apt-get purge -y --auto-remove curl \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 # Copia só os manifestos (cache amigo)
 COPY pyproject.toml poetry.lock ./
 
+# DEBUG: confirme o arquivo que entrou na imagem
+RUN ls -la /app && echo "=== pyproject.toml (primeiras 40 linhas) ===" && \
+    awk 'NR<=40{print NR": "$0} NR==40{exit}' /app/pyproject.toml
+
+
 # Sincroniza o lock (se mudou) e instala deps de runtime
 RUN poetry lock --no-update \
- && poetry install --only main --no-root --no-ansi
+    && poetry install --only main --no-root --no-ansi
 
 # Agora copia o código
 COPY . .
